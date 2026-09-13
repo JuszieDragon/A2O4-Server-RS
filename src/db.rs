@@ -86,7 +86,9 @@ where
     .await?;
     insert_work_tags_links(&mut tx, tag_ids, work.id).await?;
 
-    insert_work_series_link(&mut tx, slice::from_ref(work)).await?;
+    if !work.series.is_empty() {
+        insert_work_series_link(&mut tx, slice::from_ref(work)).await?;
+    }
 
     tx.commit().await?;
 
