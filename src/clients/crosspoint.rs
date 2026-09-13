@@ -57,6 +57,7 @@ impl Client for Crosspoint {
 }
 
 //TODO try out https://lib.rs/crates/fast_websocket_client
+//TODO fix trying to upload duplicate file
 async fn upload_work_bulk(
     parent: &Crosspoint,
     work: &Work,
@@ -66,7 +67,7 @@ async fn upload_work_bulk(
     series: Option<&Series>,
     is_bulk: bool,
 ) -> Result<()> {
-    let filename = work.get_filename(download_format, series.map(|x| &x.id));
+    let filename = work.get_filename(download_format, series.map(|x| x.id));
     let (file, size) = parent.get_file_with_size(work, series, &filename, &config.download_path)?;
 
     let remote_file_path =
@@ -111,6 +112,7 @@ async fn upload_work_bulk(
     });
 
     let title = work.title.clone();
+    let device_name = device.name.clone();
     let read_task = tokio::spawn(async move {
         while let Some(Ok(message)) = stream.next().await {
             if let Message::Text(text) = message {
@@ -120,10 +122,11 @@ async fn upload_work_bulk(
                     break;
                 } else if text.starts_with("ERROR") {
                     return Err(anyhow!(
-                        "Error uploading work {} with filename {} to device: {}",
+                        "Error uploading work {} with filename {} to device '{}': {}",
                         title,
                         filename,
-                        text.split(':').next_back().unwrap()
+                        device_name,
+                        text.split_once(':').unwrap().1
                     ));
                 }
             }

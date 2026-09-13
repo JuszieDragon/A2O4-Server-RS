@@ -8,22 +8,24 @@ use crate::{
 use anyhow::{Context, Result};
 use derive_builder::Builder;
 use scraper::{ElementRef, Selector};
+use sqlx::prelude::FromRow;
 use std::{collections::HashMap, path::Path, str::FromStr};
 use tokio::{fs::File, io::AsyncWriteExt};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, Debug, FromRow, PartialEq)]
 pub struct SeriesLink {
-    pub series_id: String,
-    pub series_name: String,
+    #[sqlx(try_from = "i64")]
+    pub series_id: i64,
+    pub series_title: String,
     pub part_in_series: u8,
 }
 
 // For works downloaded as a series I could load the details missing from the series page from the epub
 // after download
-#[derive(Builder, Debug, Default, Clone)]
+#[derive(Builder, Clone, Debug, Default)]
 #[builder(default)]
 pub struct Work {
-    pub id: String,
+    pub id: i64,
     pub title: String,
     pub authors: Vec<String>,
     pub download_links: HashMap<DownloadFormat, String>,
@@ -32,7 +34,7 @@ pub struct Work {
     pub relationships: Vec<String>,
     pub characters: Vec<String>,
     pub additional_tags: Vec<String>,
-    pub series: HashMap<String, SeriesLink>,
+    pub series: HashMap<i64, SeriesLink>,
 }
 
 impl std::fmt::Display for Work {
@@ -63,7 +65,7 @@ impl Work {
     ) -> Self {
         match series {
             None => Self {
-                id: "1".to_owned(),
+                id: 1,
                 title,
                 authors: vec![String::new()],
                 download_links: HashMap::default(),
@@ -75,7 +77,7 @@ impl Work {
                 series: HashMap::default(),
             },
             Some(unwrapped_series) => Self {
-                id: "1".to_owned(),
+                id: 1,
                 title,
                 authors: vec![String::new()],
                 download_links: HashMap::default(),
@@ -85,10 +87,10 @@ impl Work {
                 characters: vec![],
                 additional_tags: vec![],
                 series: HashMap::from([(
-                    "1".to_owned(),
+                    1,
                     SeriesLink {
-                        series_id: "1".to_string(),
-                        series_name: unwrapped_series,
+                        series_id: 1,
+                        series_title: unwrapped_series,
                         part_in_series: part_in_series.unwrap(),
                     },
                 )]),
@@ -96,12 +98,12 @@ impl Work {
         }
     }
 
-    pub fn get_series_link(&self, series_id: &String) -> Option<&SeriesLink> {
-        self.series.get(series_id)
+    pub fn get_series_link(&self, series_id: i64) -> Option<&SeriesLink> {
+        self.series.get(&series_id)
     }
 
     //TODO maybe pass in whole series and get part in series from that
-    pub fn get_filename(&self, format: DownloadFormat, series_id: Option<&String>) -> String {
+    pub fn get_filename(&self, format: DownloadFormat, series_id: Option<i64>) -> String {
         let non_series_filename = format!("{}.{}", self.title, format.to_string().to_lowercase());
 
         if let Some(series_id) = series_id {
@@ -120,7 +122,7 @@ impl Work {
     }
 
     pub async fn parse_work(
-        id: &str,
+        id: i64,
         user: &User,
         config: &Config,
         fandom_override: Option<String>,
@@ -198,7 +200,7 @@ impl Work {
             .map(|x| x.text().collect())
             .collect();
         let series_element = document.select(&part_in_series_selector);
-        let series_links: HashMap<String, SeriesLink> = series_element
+        let series_links: HashMap<i64, SeriesLink> = series_element
             .map(|series| {
                 let series_name_element = series.child_elements().next().unwrap();
                 let series_id = series_name_element
@@ -208,12 +210,12 @@ impl Work {
                     .split_terminator('/')
                     .nth(2)
                     .unwrap()
-                    .to_owned();
-
+                    .parse::<i64>()
+                    .unwrap();
                 (
-                    series_id.clone(),
+                    series_id,
                     SeriesLink {
-                        series_name: sanitise_string(
+                        series_title: sanitise_string(
                             &series_name_element
                                 .text()
                                 .collect::<String>()
@@ -239,7 +241,7 @@ impl Work {
         println!("Work loaded");
 
         Ok(Work {
-            id: id.to_owned(),
+            id,
             title: sanitise_string(&title),
             authors,
             download_links,
@@ -273,13 +275,14 @@ impl Work {
 
         let mut heading = blurb.select(&heading_selector);
         let title_element = heading.next().context("Could not find title for work")?;
-        let id: String = title_element
+        let id: i64 = title_element
             .attr("href")
             .context("Could not find id for work in blurb")?
             .split_terminator('/')
             .nth(2)
             .context("Could not find id for work in blurb")?
-            .to_owned();
+            .parse()
+            .context("Could not parse work id into i64")?;
         let title: String = title_element.text().collect();
 
         println!("  Parsing work {id} - {title}");
@@ -319,7 +322,7 @@ impl Work {
             .map(|tag| tag.text().collect())
             .collect();
         let series_element = blurb.select(&series_selector);
-        let series_links: HashMap<String, SeriesLink> = series_element
+        let series_links: HashMap<i64, SeriesLink> = series_element
             .map(|series| {
                 let mut elements = series.child_elements();
                 let part_in_series = elements
@@ -338,12 +341,13 @@ impl Work {
                     .split_terminator('/')
                     .nth(2)
                     .unwrap()
-                    .to_owned();
+                    .parse::<i64>()
+                    .unwrap();
 
                 (
-                    series_id.clone(),
+                    series_id,
                     SeriesLink {
-                        series_name: sanitise_string(series_name),
+                        series_title: sanitise_string(series_name),
                         series_id,
                         part_in_series,
                     },
@@ -354,7 +358,7 @@ impl Work {
         println!("  Work parsed\n");
 
         Ok(Work {
-            id: id.clone(),
+            id,
             title: sanitise_string(&title),
             authors,
             download_links,
@@ -402,7 +406,7 @@ impl Work {
             .bytes()
             .await
             .with_context(|| format!("Error converting work {} to bytes", self.title))?;
-        let download_path = download_folder.join(self.get_filename(format, series.map(|x| &x.id)));
+        let download_path = download_folder.join(self.get_filename(format, series.map(|x| x.id)));
 
         println!("Downloading to: {}", download_folder.to_str().unwrap());
 

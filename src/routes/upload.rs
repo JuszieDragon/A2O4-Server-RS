@@ -1,11 +1,13 @@
 use rocket::{http::Status, serde::json::Json, State};
+use rocket_db_pools::Connection;
 use serde::Deserialize;
 
 use crate::{
     clients::client::Client,
     common::DownloadFormat,
-    config,
+    config, db,
     domain::{series::Series, work::Work},
+    A2O4Db,
 };
 
 #[derive(Clone, Deserialize)]
@@ -122,6 +124,97 @@ pub async fn upload_series(
         format!(
             "Successfully uploaded {} to {}",
             request.series, request.device
+        ),
+    )
+}
+
+//TODO fix error on duplicate file upload for crosspoint
+#[get("/upload/queue/<device>")]
+pub async fn upload_queued_works_and_series(
+    device: &str,
+    mut db: Connection<A2O4Db>,
+    config: &State<config::Config>,
+) -> (Status, String) {
+    let Some(device) = config.get_device_by_name(device) else {
+        return (
+            Status::BadRequest,
+            format!("Could not find device {}", device),
+        );
+    };
+
+    let (work_ids, series_ids) =
+        match db::get_queued_uploads_for_device(&mut db, &device.name).await {
+            Ok(result) => result,
+            Err(error) => {
+                return (
+                    Status::InternalServerError,
+                    format!("Failed to read from queue: {}", error),
+                )
+            }
+        };
+
+    for id in &work_ids {
+        let work = match db::get_work(&mut db, *id).await {
+            Ok(work) => work,
+            Err(error) => {
+                return (
+                    Status::InternalServerError,
+                    format!("Failed to load work {} from db: {}", id, error),
+                )
+            }
+        };
+        let upload_result = work
+            .upload_to_devices(config, vec![device], DownloadFormat::EPUB)
+            .await;
+        if let Err(error) = upload_result {
+            return (Status::BadGateway, error.to_response_string());
+        };
+        let delete_result = db::delete_from_queue(&mut db, &device.name, true, *id).await;
+        if let Err(error) = delete_result {
+            return (
+                Status::InternalServerError,
+                format!(
+                    "Failed to delete work {} from upload queue for device {}: {}",
+                    id, device.name, error,
+                ),
+            );
+        }
+    }
+
+    for id in &series_ids {
+        let series = match db::get_series(&mut db, *id).await {
+            Ok(series) => series,
+            Err(error) => {
+                return (
+                    Status::InternalServerError,
+                    format!("Failed to load series {} from db: {}", id, error),
+                )
+            }
+        };
+        let upload_result = series
+            .upload_to_devices(config, vec![device], DownloadFormat::EPUB)
+            .await;
+        match upload_result {
+            Ok(_) => {}
+            Err(error) => return (Status::BadGateway, error.to_response_string()),
+        }
+        let delete_result = db::delete_from_queue(&mut db, &device.name, false, *id).await;
+        if let Err(error) = delete_result {
+            return (
+                Status::InternalServerError,
+                format!(
+                    "Failed to delete series {} from upload queue for device {}: {}",
+                    id, device.name, error,
+                ),
+            );
+        }
+    }
+
+    (
+        Status::Ok,
+        format!(
+            "Successfully uploaded works {:?} and series {:?} ",
+            work_ids, series_ids
         ),
     )
 }

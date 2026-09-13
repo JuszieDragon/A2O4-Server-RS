@@ -45,7 +45,7 @@ pub fn meta(config: &State<config::Config>) -> (Status, String) {
         .text()
         .collect();
 
-    let id: String = document_html
+    let id: i64 = document_html
         .select(&id_selector)
         .nth(1)
         .unwrap()
@@ -54,7 +54,8 @@ pub fn meta(config: &State<config::Config>) -> (Status, String) {
         .split("/")
         .last()
         .unwrap()
-        .to_string();
+        .parse()
+        .unwrap();
 
     let tag_types = document_html.select(&tag_type_selector);
     let tag_elements = document_html.select(&tag_element_selector);
@@ -63,7 +64,7 @@ pub fn meta(config: &State<config::Config>) -> (Status, String) {
     let mut relationships: Vec<String> = Vec::new();
     let mut characters: Vec<String> = Vec::new();
     let mut additional_tags: Vec<String> = Vec::new();
-    let mut series: HashMap<String, SeriesLink> = HashMap::new();
+    let mut series: HashMap<i64, SeriesLink> = HashMap::new();
 
     for (tag_type_element, tag_element) in tag_types.zip(tag_elements) {
         let tag_type = tag_type_element
@@ -118,9 +119,9 @@ pub fn meta(config: &State<config::Config>) -> (Status, String) {
     (Status::Ok, "Ok".to_string())
 }
 
-fn parse_series_tag(series_element: ElementRef) -> HashMap<String, SeriesLink> {
+fn parse_series_tag(series_element: ElementRef) -> HashMap<i64, SeriesLink> {
     let mut part_in_series = 0;
-    let mut series_links: HashMap<String, SeriesLink> = HashMap::new();
+    let mut series_links: HashMap<i64, SeriesLink> = HashMap::new();
     let part_re = Regex::new(r"Part (\d+) of").unwrap();
 
     for child in series_element.children() {
@@ -130,21 +131,22 @@ fn parse_series_tag(series_element: ElementRef) -> HashMap<String, SeriesLink> {
             }
         } else if let Some(element) = child.value().as_element() {
             if element.name() == "a" {
-                let series_id = element
+                let series_id: i64 = element
                     .attr("href")
                     .unwrap()
                     .split("/")
                     .last()
                     .unwrap()
-                    .to_string();
+                    .parse()
+                    .unwrap();
                 let series_name: String =
                     scraper::ElementRef::wrap(child).unwrap().text().collect();
 
                 series_links.insert(
-                    series_id.clone(),
+                    series_id,
                     SeriesLink {
                         series_id,
-                        series_name,
+                        series_title: series_name,
                         part_in_series,
                     },
                 );

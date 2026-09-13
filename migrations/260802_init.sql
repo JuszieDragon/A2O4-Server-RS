@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS "series" (
   "num_words" INTEGER NOT NULL,
   "num_works" INTEGER NOT NULL,
   "is_completed" BOOLEAN NOT NULL,
-  "num_bookmarks" TEXT NOT NULL
+  "num_bookmarks" INTEGER NOT NULL,
+  "filtered_fandom" TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "author" (

@@ -115,10 +115,16 @@ async fn rocket() -> _ {
             run_migrations,
         ))
         .mount("/", routes![index])
-        .mount("/", routes![routes::download::download])
-        .mount("/", routes![routes::upload::upload_work])
-        .mount("/", routes![routes::upload::upload_series])
-        .mount("/", routes![routes::metadata::meta])
         .mount("/", routes![healthcheck])
+        .mount("/", routes![routes::download::download])
+        .mount("/", routes![routes::metadata::meta])
         .mount("/", routes![routes::devices::get_devices])
+        .mount(
+            "/",
+            routes![
+                routes::upload::upload_work,
+                routes::upload::upload_series,
+                routes::upload::upload_queued_works_and_series
+            ],
+        )
 }

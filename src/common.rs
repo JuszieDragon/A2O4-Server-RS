@@ -53,7 +53,7 @@ impl std::fmt::Display for PageType {
 #[derive(PartialEq, Debug)]
 pub struct UrlInfo {
     pub page_type: PageType,
-    pub id: String,
+    pub id: i64,
 }
 
 pub struct UploadError {
@@ -72,7 +72,7 @@ impl UploadError {
 }
 
 //TODO check for proxy error page, timeout page
-pub async fn get_page(id: &str, page: Option<u8>, user: &User) -> Result<Html> {
+pub async fn get_page(id: i64, page: Option<u8>, user: &User) -> Result<Html> {
     let url = if let Some(i) = page {
         format!("https://archiveofourown.org/series/{id}?page={i}")
     } else {
@@ -125,7 +125,7 @@ pub async fn get_page(id: &str, page: Option<u8>, user: &User) -> Result<Html> {
     }
 }
 
-pub async fn get_series_pages(id: &str, user: &User) -> Result<Vec<Html>> {
+pub async fn get_series_pages(id: i64, user: &User) -> Result<Vec<Html>> {
     let response = get_page(id, Some(1), user).await?;
 
     let response_text = response.html();
@@ -214,7 +214,7 @@ pub fn parse_url(url: &Url) -> Result<UrlInfo> {
     Ok(UrlInfo {
         page_type: PageType::from_str(&caps["type"])
             .with_context(|| format!("Invalid page type {}", &caps["type"]))?,
-        id: caps["id"].to_string(),
+        id: caps["id"].parse()?,
     })
 }
 
@@ -239,7 +239,7 @@ mod tests {
             parse_url(&Url::parse("https://archiveofourown.org/works/123456").unwrap()).unwrap(),
             UrlInfo {
                 page_type: PageType::Work,
-                id: "123456".to_string()
+                id: 123456
             }
         );
     }
@@ -250,7 +250,7 @@ mod tests {
             parse_url(&Url::parse("https://archiveofourown.org/series/123456").unwrap()).unwrap(),
             UrlInfo {
                 page_type: PageType::Series,
-                id: "123456".to_string()
+                id: 123456
             }
         );
     }
@@ -264,7 +264,7 @@ mod tests {
             .unwrap(),
             UrlInfo {
                 page_type: PageType::Work,
-                id: "654321".to_string()
+                id: 654321
             }
         );
     }

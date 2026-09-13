@@ -73,7 +73,7 @@ fn upload_work_bulk(
         &create_sftp_connection(device)?
     };
 
-    let filename = work.get_filename(download_format, series.map(|x| &x.id));
+    let filename = work.get_filename(download_format, series.map(|x| x.id));
     let (file, size) = parent.get_file_with_size(work, series, &filename, &config.download_path)?;
 
     println!("Starting to upload file: {}", filename);

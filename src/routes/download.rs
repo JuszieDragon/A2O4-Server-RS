@@ -137,7 +137,7 @@ pub async fn download(
     match url_info.page_type {
         PageType::Work => {
             let work = match Work::parse_work(
-                &url_info.id,
+                url_info.id,
                 user,
                 config,
                 validated_request.fandom_override.clone(),
@@ -182,7 +182,7 @@ pub async fn download(
             }
         }
         PageType::Series => {
-            let series = match Series::parse_series(&url_info.id, user, config).await {
+            let series = match Series::parse_series(url_info.id, user, config).await {
                 Ok(series) => series,
                 Err(error) => return (Status::BadRequest, error.to_string()),
             };

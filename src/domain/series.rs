@@ -19,7 +19,7 @@ use tokio::fs::create_dir;
 #[derive(Builder, Default)]
 #[builder(default)]
 pub struct Series {
-    pub id: String,
+    pub id: i64,
     pub title: String,
     pub creators: Vec<String>,
     pub begun: String,   // TODO make some sort of date type
@@ -32,7 +32,7 @@ pub struct Series {
 
     //These are gotten from parsing all the works in the series
     pub works: Vec<Work>,
-    authors: HashSet<String>,
+    //authors: HashSet<String>,
     pub fandoms: HashSet<String>,
     pub filtered_fandom: String,
 }
@@ -41,7 +41,8 @@ impl std::fmt::Display for Series {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
-            "id: {}\ntitle: {}\ncreators: {:?}\nseries_begun: {}\nseries_updated: {}\ndescription: {}\nnum_words: {}\nnum_works: {}\nis_completed: {}\nnum_bookmarks: {}\nworks: {:?}\nauthors: {:?}\nfandoms: {:?}\nfiltered_fandoms: {:?}",
+            //"id: {}\ntitle: {}\ncreators: {:?}\nseries_begun: {}\nseries_updated: {}\ndescription: {}\nnum_words: {}\nnum_works: {}\nis_completed: {}\nnum_bookmarks: {}\nworks: {:?}\nauthors: {:?}\nfandoms: {:?}\nfiltered_fandoms: {:?}",
+            "id: {}\ntitle: {}\ncreators: {:?}\nseries_begun: {}\nseries_updated: {}\ndescription: {}\nnum_words: {}\nnum_works: {}\nis_completed: {}\nnum_bookmarks: {}\nworks: {:?}\nfandoms: {:?}\nfiltered_fandoms: {:?}",
             self.id,
             self.title,
             self.creators,
@@ -53,7 +54,7 @@ impl std::fmt::Display for Series {
             self.is_completed,
             self.num_bookmarks,
             self.works,
-            self.authors,
+            //self.authors,
             self.fandoms,
             self.filtered_fandom
         )
@@ -65,7 +66,7 @@ impl Series {
         let (works, num_works) = Self::load_series_works_from_local(title, &fandom, config)?;
 
         Ok(Series {
-            id: "1".to_owned(),
+            id: 1,
             title: sanitise_string(title),
             creators: vec!["bob".to_owned()],
             begun: "at some point".to_owned(),
@@ -76,7 +77,7 @@ impl Series {
             is_completed: true,
             num_bookmarks: 0,
             works,
-            authors: HashSet::from(["yes".to_string()]),
+            //authors: HashSet::from(["yes".to_string()]),
             fandoms: HashSet::from(["yes".to_string()]),
             filtered_fandom: fandom,
         })
@@ -115,7 +116,7 @@ impl Series {
         ))
     }
 
-    pub async fn parse_series(id: &str, user: &User, config: &Config) -> Result<Series> {
+    pub async fn parse_series(id: i64, user: &User, config: &Config) -> Result<Series> {
         println!("Loading series {id}");
         let all_pages = get_series_pages(id, user).await?;
         println!("Got AO3 response");
@@ -240,7 +241,7 @@ impl Series {
         println!("Finished parsing series");
 
         Ok(Series {
-            id: id.to_owned(),
+            id,
             title: sanitise_string(&title),
             creators,
             begun,
@@ -251,7 +252,7 @@ impl Series {
             is_completed,
             num_bookmarks,
             works,
-            authors,
+            //authors,
             fandoms: fandoms.clone(),
             filtered_fandom: filter_fandoms(&Vec::from_iter(fandoms), config),
         })
