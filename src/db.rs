@@ -141,10 +141,8 @@ pub async fn get_series(db: &mut SqliteConnection, series_id: i64) -> Result<Ser
     .await?;
 
     let fandoms = get_tags(&mut *db, series_id, false).await?.fandoms;
-    println!("Loaded fandoms");
 
     let works = get_works_linked_to_series(&mut *db, series_id).await?;
-    println!("Loaded works");
 
     Ok(Series {
         id: series_id,
@@ -202,8 +200,6 @@ async fn get_works_linked_to_series(
     .fetch_all(&mut *db)
     .await?;
 
-    println!("got work ids");
-
     let mut works = Vec::with_capacity(work_ids.len());
     for id in work_ids {
         let work = get_work(&mut *db, id).await?;
@@ -228,8 +224,6 @@ async fn get_work_series_link(
     .bind(work_id)
     .fetch_all(db)
     .await?;
-
-    println!("got work series link");
 
     Ok(series_links
         .into_iter()

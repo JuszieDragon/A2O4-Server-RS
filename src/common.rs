@@ -71,7 +71,7 @@ impl UploadError {
     }
 }
 
-//TODO check for proxy error page, timeout page
+//TODO check for proxy error page, timeout page, check if session is bad
 pub async fn get_page(id: i64, page: Option<u8>, user: &User) -> Result<Html> {
     let url = if let Some(i) = page {
         format!("https://archiveofourown.org/series/{id}?page={i}")
