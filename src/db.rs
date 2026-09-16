@@ -2,58 +2,15 @@ use crate::{
     config::Device,
     domain::{
         series::Series,
+        tag::{TagType, Tags},
         work::{SeriesLink, Work},
     },
 };
 
 use core::slice;
 use rocket_db_pools::sqlx;
-use sqlx::{prelude::FromRow, Acquire, QueryBuilder, Row, Sqlite, SqliteConnection};
+use sqlx::{Acquire, QueryBuilder, Row, Sqlite, SqliteConnection};
 use std::collections::HashMap;
-use strum_macros::{Display, EnumString};
-
-#[derive(Display, EnumString, sqlx::Type)]
-#[strum(serialize_all = "snake_case")]
-#[sqlx(rename_all = "lowercase")]
-pub enum TagType {
-    Fandom,
-    Characters,
-    Relationships,
-    Additional,
-}
-
-#[derive(FromRow)]
-struct Tags {
-    fandoms: Vec<String>,
-    characters: Vec<String>,
-    relationships: Vec<String>,
-    additional: Vec<String>,
-}
-
-impl From<Vec<(TagType, String)>> for Tags {
-    fn from(vec: Vec<(TagType, String)>) -> Self {
-        let mut fandoms: Vec<String> = Vec::new();
-        let mut characters: Vec<String> = Vec::new();
-        let mut relationships: Vec<String> = Vec::new();
-        let mut additional: Vec<String> = Vec::new();
-
-        for (tag_type, tag) in vec {
-            match tag_type {
-                TagType::Fandom => fandoms.push(tag),
-                TagType::Characters => characters.push(tag),
-                TagType::Relationships => relationships.push(tag),
-                TagType::Additional => additional.push(tag),
-            }
-        }
-
-        Tags {
-            fandoms,
-            characters,
-            relationships,
-            additional,
-        }
-    }
-}
 
 pub async fn insert_work<'a, A>(
     //Allows this function to be called with either a raw connection or a transaction
