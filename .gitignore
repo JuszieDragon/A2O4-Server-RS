@@ -1,7 +1,12 @@
 debug/
 target/
 downloads/
+sftp/
+.idea/
 Cargo.lock
 .vscode
 examples.txt
-config.toml
+*.html
+.direnv
+.envrc
+db.sqlite

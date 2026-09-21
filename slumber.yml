@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/LucasPickering/slumber/refs/tags/v4.3.1/schemas/collection.json
+# ^ This enables schema validation and autocomplete in your editor
+# https://github.com/redhat-developer/yaml-language-server
+
+# For basic usage info, see:
+# https://slumber.lucaspickering.me/getting_started.html
+# For all collection options, see:
+# https://slumber.lucaspickering.me/api/request_collection/index.html
+
+name: A204
+
+# Profiles are groups of data you can easily switch between. A common usage is
+# to define profiles for various environments of a REST service
+profiles:
+  local:
+    data:
+      host: http://localhost:9797
+  soul-matrix:
+    data:
+      host: http://192.168.1.1:9797
+
+requests:
+  index:
+    name: index
+    method: GET
+    url: "{{ host }}"
+
+  download:
+    method: POST
+    url: "{{ host }}/download"
+    body:
+      type: json
+      data: { "url": "", "devices": ["Xteink X4"] }
+
+  device:
+    method: GET
+    url: "{{ host }}/devices"
+
+  meta:
+    method: GET
+    url: "{{ host }}/meta"

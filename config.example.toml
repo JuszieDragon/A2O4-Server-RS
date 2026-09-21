@@ -5,6 +5,9 @@ download_path = '../test/downloads'
 ao3_username = "username"
 ao3_password = "password"
 
+# The default file format to download works in, valid formats are AZW3, EPUB, MOBI, PDF, HTML
+default_format = "EPUB"
+
 # list of devices to send works to
 [[devices]]
 name = "Kindle"
