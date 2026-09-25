@@ -56,14 +56,14 @@ pub async fn upload_work(
         .unwrap();
 
         let upload_result = series
-            .upload_to_devices(config, devices, DownloadFormat::EPUB)
+            .upload_to_devices(config, devices, DownloadFormat::Epub)
             .await;
         if let Err(error) = upload_result {
             return (Status::BadGateway, error.to_response_string());
         };
     } else {
         let upload_result = work
-            .upload_to_devices(config, devices, DownloadFormat::EPUB)
+            .upload_to_devices(config, devices, DownloadFormat::Epub)
             .await;
         if let Err(error) = upload_result {
             return (Status::BadGateway, error.to_response_string());
@@ -111,7 +111,7 @@ pub async fn upload_series(
 
     let upload_result = device
         .client
-        .upload_series(&series, device, config, DownloadFormat::EPUB)
+        .upload_series(&series, device, config, DownloadFormat::Epub)
         .await;
     let Ok(()) = upload_result else {
         let error = upload_result.err().unwrap();
@@ -164,7 +164,7 @@ pub async fn upload_queued_works_and_series(
             }
         };
         let upload_result = work
-            .upload_to_devices(config, vec![device], DownloadFormat::EPUB)
+            .upload_to_devices(config, vec![device], DownloadFormat::Epub)
             .await;
         if let Err(error) = upload_result {
             return (Status::BadGateway, error.to_response_string());
@@ -192,7 +192,7 @@ pub async fn upload_queued_works_and_series(
             }
         };
         let upload_result = series
-            .upload_to_devices(config, vec![device], DownloadFormat::EPUB)
+            .upload_to_devices(config, vec![device], DownloadFormat::Epub)
             .await;
         match upload_result {
             Ok(_) => {}

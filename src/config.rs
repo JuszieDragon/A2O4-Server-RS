@@ -4,15 +4,13 @@ use crate::{
 };
 use derive_builder::Builder;
 use directories::ProjectDirs;
-use indexmap::IndexMap;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     fs::{create_dir, File},
     io::Read,
 };
 
-//TODO consider setting up default values
 #[derive(Builder, Debug, Default, Deserialize)]
 #[builder(default)]
 pub struct Config {
@@ -24,7 +22,27 @@ pub struct Config {
     pub default_format: DownloadFormat,
     pub devices: Vec<Device>,
     pub fandom_map: HashMap<String, String>,
-    pub fandom_filter: IndexMap<String, Vec<String>>,
+    #[serde(deserialize_with = "deserialize_fandom_filter")]
+    pub fandom_filter: Vec<(String, Vec<String>)>,
+}
+
+#[derive(Deserialize)]
+struct FandomFilterEntry(BTreeMap<String, Vec<String>>);
+
+fn deserialize_fandom_filter<'de, D>(
+    deserializer: D,
+) -> Result<Vec<(String, Vec<String>)>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let entries = Vec::<FandomFilterEntry>::deserialize(deserializer)?;
+
+    let flattened = entries
+        .into_iter()
+        .filter_map(|entry| entry.0.into_iter().next())
+        .collect();
+
+    Ok(flattened)
 }
 
 impl Config {
@@ -48,7 +66,7 @@ pub struct Device {
     pub username: String,
     pub password: String,
     pub download_folder: String,
-    pub uses_koreader: Option<bool>,
+    // pub uses_koreader: Option<bool>,
     #[serde(deserialize_with = "deserialize_client")]
     pub client: Clients,
 }

@@ -25,12 +25,12 @@ use url::Url;
     Deserialize,
 )]
 pub enum DownloadFormat {
-    AZW3,
+    Azw3,
     #[default]
-    EPUB,
-    MOBI,
-    PDF,
-    HTML,
+    Epub,
+    Mobi,
+    Pdf,
+    Html,
 }
 
 #[derive(EnumString, PartialEq, Debug)]
@@ -173,8 +173,8 @@ pub fn filter_fandoms(fandoms: &Vec<String>, config: &Config) -> String {
     let mut mapped_and_filtered_fandoms = mapped_fandoms.clone();
 
     for filter in &config.fandom_filter {
-        if mapped_fandoms.contains(filter.0) & mapped_and_filtered_fandoms.contains(filter.0) {
-            for fandom_to_remove in filter.1 {
+        if mapped_fandoms.contains(&filter.0) & mapped_and_filtered_fandoms.contains(&filter.0) {
+            for fandom_to_remove in &filter.1 {
                 if fandom_to_remove == "*" {
                     mapped_and_filtered_fandoms = HashSet::from_iter([filter.0.clone()]);
                 } else if mapped_fandoms.contains(fandom_to_remove) {
@@ -230,7 +230,6 @@ pub fn sanitise_string(string: &str) -> String {
 mod tests {
     use super::*;
     use crate::config::ConfigBuilder;
-    use indexmap::IndexMap;
     use std::collections::HashMap;
 
     #[test]
@@ -346,10 +345,7 @@ mod tests {
                     "Fandom 2".to_owned(),
                 ),
             ]))
-            .fandom_filter(IndexMap::from([(
-                "Fandom 1".to_owned(),
-                vec!["*".to_owned()],
-            )]))
+            .fandom_filter(vec![("Fandom 1".to_owned(), vec!["*".to_owned()])])
             .build()
             .unwrap();
 
@@ -378,10 +374,10 @@ mod tests {
                     "Fandom 2".to_owned(),
                 ),
             ]))
-            .fandom_filter(IndexMap::from([
+            .fandom_filter(vec![
                 ("Fandom 1".to_owned(), vec!["Fandom 2".to_owned()]),
                 ("Fandom 2".to_owned(), vec!["Fandom 1".to_owned()]),
-            ]))
+            ])
             .build()
             .unwrap();
 
@@ -397,10 +393,10 @@ mod tests {
     #[test]
     fn filter() {
         let config = ConfigBuilder::default()
-            .fandom_filter(IndexMap::from([
+            .fandom_filter(vec![
                 ("Fandom 1".to_owned(), vec!["Fandom 2".to_owned()]),
                 ("Fandom 2".to_owned(), vec!["Fandom 3".to_owned()]),
-            ]))
+            ])
             .build()
             .unwrap();
 
@@ -421,10 +417,10 @@ mod tests {
                     "Fandom 2".to_owned(),
                 ),
             ]))
-            .fandom_filter(IndexMap::from([
+            .fandom_filter(vec![
                 ("Fandom 1".to_owned(), vec!["Fandom 2".to_owned()]),
                 ("Fandom 2".to_owned(), vec!["Fandom 3".to_owned()]),
-            ]))
+            ])
             .build()
             .unwrap();
 

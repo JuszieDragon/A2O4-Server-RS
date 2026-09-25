@@ -1,9 +1,9 @@
 debug/
-target/
 downloads/
+result/
 sftp/
+target/
 .idea/
-Cargo.lock
 .vscode
 examples.txt
 *.html

@@ -5,7 +5,7 @@ download_path = '../test/downloads'
 ao3_username = "username"
 ao3_password = "password"
 
-# The default file format to download works in, valid formats are AZW3, EPUB, MOBI, PDF, HTML
+# The default file format to download works in, valid formats are Azw3, Epub, Mobi, Pdf, Html
 default_format = "EPUB"
 
 # list of devices to send works to
@@ -15,6 +15,7 @@ ip = "127.0.0.1"
 port = 22
 username = "root"
 password = "root"
+client = "sftp"
 download_folder = '/fanfics/sorted'
 uses_koreader = true                    # KOReader generates a metadata folder that needs to be cleaned up on deletes, omit if not using KOReader
 
@@ -24,26 +25,33 @@ ip = "127.0.0.2"
 port = 22
 username = "root"
 password = "root"
+client = "crosspoint"
 download_folder = '/fanfics/sorted'
 uses_KOReader = false
 
-# maps fandom names
+# if a work/series has the fandom on the left, it will be renamed to the fandom on the right.
+# Fandoms are unique, so if two fandoms on a work map to the same new name, only there will
+# only be one entry for the new fandom name
 [fandom_map]
 "Fallout 4" = "Fallout"
 "Fallout (Video Games)" = "Fallout"
 "Baldur's Gate (Video Games)" = "Baldur's Gate"
-"Cyberpunk 2077 (Video Game)" = "Cyberpunk 2077"
-"Cyberpunk & Cyberpunk 2020 (Roleplaying Games)" = "Cyberpunk 2077"
+"Cyberpunk 2077 (Video Game)" = "Cyberpunk"
+"Cyberpunk & Cyberpunk 2020 (Roleplaying Games)" = "Cyberpunk"
 "Persona 5" = "Persona"
 "Persona 4" = "Persona"
 "Persona 3" = "Persona"
 "Shin Megami Tensei Series" = "Shin Megami Tensei"
 "逆転裁判 | Gyakuten Saiban | Ace Attorney" = "Ace Attorney"
-"大逆転裁判 | Dai Gyakuten Saiban | The Great Ace Attorney Chronicles (Video Games)" = "Ace Attorney"
 "NieR = Automata (Video Game)" = "NieR"
 "Dungeons & Dragons (Roleplaying Game)" = "Dungeons & Dragons"
 
 # if a work/series has the fandom on the left, it will remove the fandoms on the right
-[fandom_filter]
-"Baldur's Gate" = ["Dungeons & Dragons"]
+[[fandom_filter]]
+"Baldur's Gate" = ["Dungeons & Dragons", "Original Work"]
+
+[[fandom_filter]]
 "Persona" = ["Shin Megami Tensei"]
+
+[[fandom_filter]]
+"Original Work" = ["*"]   # '*' will remove all other fandoms
