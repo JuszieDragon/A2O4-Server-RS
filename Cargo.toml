@@ -9,7 +9,6 @@ cookie_store = "0.22.1"
 derive_builder = "0.20.2"
 directories = "6.0.0"
 enum_dispatch = "0.3.13"
-enum-iterator = "2.1.0"
 epub = "2.1.4"
 regex = "1.11.1"
 reqwest = { version = "0.13.3", features = ["blocking", "cookies", "form", "multipart", "native-tls", "stream"] }

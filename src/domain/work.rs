@@ -10,6 +10,7 @@ use derive_builder::Builder;
 use scraper::{ElementRef, Selector};
 use sqlx::prelude::FromRow;
 use std::{collections::HashMap, path::Path, str::FromStr};
+use strum::IntoEnumIterator;
 use tokio::{fs::File, io::AsyncWriteExt};
 
 #[derive(Clone, Debug, FromRow, PartialEq)]
@@ -292,19 +293,18 @@ impl Work {
             authors = vec!["Anonymous".to_owned()]
         }
 
-        let download_links: HashMap<DownloadFormat, String> =
-            enum_iterator::all::<DownloadFormat>()
-                .map(|download_format| {
-                    (
-                        download_format,
-                        format!(
-                            "https://download.archiveofourown.org/downloads/{}/work.{}",
-                            id,
-                            download_format.to_string().to_lowercase()
-                        ),
-                    )
-                })
-                .collect();
+        let download_links: HashMap<DownloadFormat, String> = DownloadFormat::iter()
+            .map(|download_format| {
+                (
+                    download_format,
+                    format!(
+                        "https://download.archiveofourown.org/downloads/{}/work.{}",
+                        id,
+                        download_format.to_string().to_lowercase()
+                    ),
+                )
+            })
+            .collect();
         let fandoms: Vec<String> = blurb
             .select(&fandoms_selector)
             .map(|fandom| fandom.text().collect())

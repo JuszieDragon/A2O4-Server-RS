@@ -147,16 +147,14 @@ pub async fn download(
                 Ok(work) => work,
                 Err(error) => return (Status::BadRequest, error.to_string()),
             };
-            match work
+            if let Err(e) = work
                 .download(Path::new(&config.download_dir), download_format, None, user)
                 .await
             {
-                Ok(_) => (),
-                Err(error) => return (Status::BadRequest, error.to_string()),
+                return (Status::BadRequest, e.to_string());
             }
-            match db::insert_work(&mut **db, &work).await {
-                Ok(_) => (),
-                Err(error) => return (Status::InternalServerError, error.to_string()),
+            if let Err(e) = db::insert_work(&mut **db, &work).await {
+                return (Status::InternalServerError, e.to_string());
             }
             if !devices_to_upload_to.is_empty() {
                 let upload_result = work
@@ -181,16 +179,14 @@ pub async fn download(
                 Ok(series) => series,
                 Err(error) => return (Status::BadRequest, error.to_string()),
             };
-            match series
+            if let Err(e) = series
                 .download(Path::new(&config.download_dir), download_format, user)
                 .await
             {
-                Ok(_) => (),
-                Err(error) => return (Status::BadRequest, error.to_string()),
+                return (Status::BadRequest, e.to_string());
             }
-            match db::insert_series(&mut db, &series).await {
-                Ok(_) => (),
-                Err(error) => return (Status::InternalServerError, error.to_string()),
+            if let Err(e) = db::insert_series(&mut db, &series).await {
+                return (Status::InternalServerError, e.to_string());
             }
             if !devices_to_upload_to.is_empty() {
                 let upload_result = series

@@ -1,24 +1,23 @@
 use crate::{config::Config, domain::user::User};
 
 use anyhow::{Context, Error, Result};
-use enum_iterator::Sequence;
 use regex::Regex;
 use reqwest::{Response, StatusCode};
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, str::FromStr};
-use strum_macros::{Display, EnumString};
+use strum_macros::{Display, EnumIter, EnumString};
 use url::Url;
 
 #[derive(
     Debug,
     Default,
+    EnumIter,
     EnumString,
     PartialEq,
     Eq,
     Hash,
     Display,
-    Sequence,
     Clone,
     Copy,
     Serialize,
