@@ -24,6 +24,7 @@ use url::Url;
     Serialize,
     Deserialize,
 )]
+#[strum(ascii_case_insensitive)]
 pub enum DownloadFormat {
     Azw3,
     #[default]
@@ -172,7 +173,7 @@ pub fn filter_fandoms(fandoms: &Vec<String>, config: &Config) -> String {
 
     let mut mapped_and_filtered_fandoms = mapped_fandoms.clone();
 
-    for filter in &config.fandom_filter {
+    for filter in &config.fandom_filters {
         if mapped_fandoms.contains(&filter.0) & mapped_and_filtered_fandoms.contains(&filter.0) {
             for fandom_to_remove in &filter.1 {
                 if fandom_to_remove == "*" {
@@ -345,7 +346,7 @@ mod tests {
                     "Fandom 2".to_owned(),
                 ),
             ]))
-            .fandom_filter(vec![("Fandom 1".to_owned(), vec!["*".to_owned()])])
+            .fandom_filters(vec![("Fandom 1".to_owned(), vec!["*".to_owned()])])
             .build()
             .unwrap();
 
@@ -374,7 +375,7 @@ mod tests {
                     "Fandom 2".to_owned(),
                 ),
             ]))
-            .fandom_filter(vec![
+            .fandom_filters(vec![
                 ("Fandom 1".to_owned(), vec!["Fandom 2".to_owned()]),
                 ("Fandom 2".to_owned(), vec!["Fandom 1".to_owned()]),
             ])
@@ -393,7 +394,7 @@ mod tests {
     #[test]
     fn filter() {
         let config = ConfigBuilder::default()
-            .fandom_filter(vec![
+            .fandom_filters(vec![
                 ("Fandom 1".to_owned(), vec!["Fandom 2".to_owned()]),
                 ("Fandom 2".to_owned(), vec!["Fandom 3".to_owned()]),
             ])
@@ -417,7 +418,7 @@ mod tests {
                     "Fandom 2".to_owned(),
                 ),
             ]))
-            .fandom_filter(vec![
+            .fandom_filters(vec![
                 ("Fandom 1".to_owned(), vec!["Fandom 2".to_owned()]),
                 ("Fandom 2".to_owned(), vec!["Fandom 3".to_owned()]),
             ])

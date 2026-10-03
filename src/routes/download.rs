@@ -124,7 +124,7 @@ pub async fn download(
 
     let download_format = validated_request.format.unwrap_or(config.default_format);
 
-    match user.write_cookies() {
+    match user.write_cookies(config.get_cookies_path()) {
         Ok(()) => {}
         Err(error) => {
             return (
@@ -148,12 +148,7 @@ pub async fn download(
                 Err(error) => return (Status::BadRequest, error.to_string()),
             };
             match work
-                .download(
-                    Path::new(&config.download_path),
-                    download_format,
-                    None,
-                    user,
-                )
+                .download(Path::new(&config.download_dir), download_format, None, user)
                 .await
             {
                 Ok(_) => (),
@@ -187,7 +182,7 @@ pub async fn download(
                 Err(error) => return (Status::BadRequest, error.to_string()),
             };
             match series
-                .download(Path::new(&config.download_path), download_format, user)
+                .download(Path::new(&config.download_dir), download_format, user)
                 .await
             {
                 Ok(_) => (),

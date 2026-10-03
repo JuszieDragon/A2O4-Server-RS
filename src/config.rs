@@ -7,23 +7,24 @@ use directories::ProjectDirs;
 use serde::{Deserialize, Deserializer};
 use std::{
     collections::{BTreeMap, HashMap},
-    fs::{create_dir, File},
+    fs::File,
     io::Read,
+    path::PathBuf,
 };
 
 #[derive(Builder, Debug, Default, Deserialize)]
 #[builder(default)]
 pub struct Config {
     pub port: u16,
-    pub download_path: String,
-    pub db_path: String,
-    pub ao3_username: Option<String>,
-    pub ao3_password: Option<String>,
+    pub download_dir: String,
+    pub state_dir: String,
+    pub ao3_username: String,
+    pub ao3_password: String,
     pub default_format: DownloadFormat,
     pub devices: Vec<Device>,
     pub fandom_map: HashMap<String, String>,
     #[serde(deserialize_with = "deserialize_fandom_filter")]
-    pub fandom_filter: Vec<(String, Vec<String>)>,
+    pub fandom_filters: Vec<(String, Vec<String>)>,
 }
 
 #[derive(Deserialize)]
@@ -56,6 +57,10 @@ impl Config {
             .map(|x| self.get_device_by_name(&x).ok_or(x))
             .collect()
     }
+
+    pub fn get_cookies_path(&self) -> PathBuf {
+        PathBuf::from(&self.state_dir).join("cookies.json")
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -65,7 +70,7 @@ pub struct Device {
     pub port: u16,
     pub username: String,
     pub password: String,
-    pub download_folder: String,
+    pub upload_dir: String,
     // pub uses_koreader: Option<bool>,
     #[serde(deserialize_with = "deserialize_client")]
     pub client: Clients,
@@ -84,36 +89,32 @@ where
     }
 }
 
-pub async fn read_config() -> Result<Config, String> {
-    if let Some(proj_dirs) = ProjectDirs::from("", "", env!("CARGO_PKG_NAME")) {
-        let config_dir = proj_dirs.config_dir();
-        if config_dir.exists() {
-            let Ok(mut file) = File::open(config_dir.join("config.toml")) else {
-                return Err(format!(
-                    "Failed to open config.toml at {}, make sure the file exists and has the right permissions",
-                    config_dir.display()
-                ));
-            };
-            let mut file_contents = String::new();
-            let read_result = file.read_to_string(&mut file_contents);
-            if read_result.is_err() {
-                return Err(read_result.err().unwrap().to_string());
-            }
+pub async fn read_config(path: Option<String>) -> Result<Config, String> {
+    let config_path = match path {
+        Some(path) => path,
+        None => ProjectDirs::from("", "", env!("CARGO_PKG_NAME"))
+            .unwrap()
+            .config_dir()
+            .join("config.toml")
+            .to_str()
+            .unwrap()
+            .to_string(),
+    };
 
-            match toml::from_str::<Config>(&file_contents) {
-                Ok(config) => Ok(config),
-                Err(error) => Err(error.to_string()),
-            }
-        } else {
-            create_dir(proj_dirs.config_dir()).unwrap();
-            Err(format!(
-                "First time run, create a config file at {}",
-                config_dir.join("config.toml").display()
-            ))
-        }
-    } else {
-        Err(String::from(
-            "Failed to get home directory from OS, make sure home path is set correctly in OS",
-        ))
+    let Ok(mut file) = File::open(&config_path) else {
+        return Err(format!(
+            "Failed to open config file at {}, make sure the file exists and has the right permissions",
+            config_path
+        ));
+    };
+    let mut file_contents = String::new();
+    let read_result = file.read_to_string(&mut file_contents);
+    if read_result.is_err() {
+        return Err(read_result.err().unwrap().to_string());
+    }
+
+    match toml::from_str::<Config>(&file_contents) {
+        Ok(config) => Ok(config),
+        Err(error) => Err(error.to_string()),
     }
 }

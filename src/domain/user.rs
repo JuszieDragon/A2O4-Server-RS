@@ -1,8 +1,9 @@
-use directories::ProjectDirs;
 use regex::Regex;
 use reqwest::{header, Client};
 use reqwest_cookie_store::CookieStoreMutex;
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{path::PathBuf, sync::Arc, time::Duration};
+
+use crate::config::Config;
 
 pub struct User {
     pub client: Client,
@@ -10,9 +11,10 @@ pub struct User {
 }
 
 impl User {
-    pub async fn new(username: &str, password: &str) -> Result<Self, String> {
-        let Ok(cookie_store) = Self::load_cookies() else {
-            return Err("Error loading cookies from disk".to_string());
+    pub async fn new(config: &Config) -> Result<Self, String> {
+        let cookie_store = match Self::load_cookies(config.get_cookies_path()) {
+            Ok(store) => store,
+            Err(e) => return Err(e),
         };
 
         //TODO do better cookie checks, refresh if cookies expired
@@ -24,10 +26,9 @@ impl User {
             });
         }
 
-        //let (client, auth_token) = Self::auth_user(
         let client = Self::auth_user(
-            username.to_string(),
-            password.to_string(),
+            config.ao3_username.to_string(),
+            config.ao3_password.to_string(),
             cookie_store.clone(),
         )
         .await;
@@ -37,9 +38,10 @@ impl User {
             cookie_store,
         };
 
-        Self::write_cookies(&user).expect("Failed to write cookies");
-
-        Ok(user)
+        match Self::write_cookies(&user, config.get_cookies_path()) {
+            Ok(_) => Ok(user),
+            Err(e) => Err(e),
+        }
     }
 
     async fn auth_user(
@@ -73,43 +75,33 @@ impl User {
             .await
             .unwrap();
         // TODO do error checking here on the response status
+        // Catch 429
         println!("{:?}", login_response.status());
         println!("Successfully logged in\n");
         client
     }
 
-    fn load_cookies() -> Result<Arc<CookieStoreMutex>, String> {
-        if let Some(proj_dirs) = ProjectDirs::from("", "", env!("CARGO_PKG_NAME")) {
-            let config_dir = proj_dirs.config_dir();
-            let cookie_store = {
-                if let Ok(file) = std::fs::File::open(Path::new(&config_dir.join("cookies.json")))
-                    .map(std::io::BufReader::new)
-                {
-                    cookie_store::serde::json::load(file).unwrap()
-                } else {
-                    cookie_store::CookieStore::new()
-                }
-            };
-            let cookie_store = CookieStoreMutex::new(cookie_store);
-            Ok(Arc::new(cookie_store))
-        } else {
-            Err("Failed to open config directory".into())
-        }
+    fn load_cookies(cookie_path: PathBuf) -> Result<Arc<CookieStoreMutex>, String> {
+        let cookie_store = {
+            if let Ok(file) = std::fs::File::open(&cookie_path).map(std::io::BufReader::new) {
+                cookie_store::serde::json::load(file).unwrap()
+            } else {
+                cookie_store::CookieStore::new()
+            }
+        };
+        let cookie_store = CookieStoreMutex::new(cookie_store);
+        Ok(Arc::new(cookie_store))
     }
 
-    pub fn write_cookies(&self) -> Result<(), String> {
-        //TODO more error handling here
-        //TODO undupe getting config directory, maybe store in config
-        if let Some(proj_dirs) = ProjectDirs::from("", "", env!("CARGO_PKG_NAME")) {
-            let config_dir = proj_dirs.config_dir();
-            let store = self.cookie_store.lock().unwrap();
-            let mut writer = std::fs::File::create(Path::new(&config_dir.join("cookies.json")))
-                .map(std::io::BufWriter::new)
-                .unwrap();
-            cookie_store::serde::json::save(&store, &mut writer).unwrap();
-            Ok(())
-        } else {
-            Err("Failed to open config directory".into())
+    pub fn write_cookies(&self, cookie_path: PathBuf) -> Result<(), String> {
+        let store = self.cookie_store.lock().unwrap();
+        let mut writer = std::fs::File::create(&cookie_path).map(std::io::BufWriter::new);
+        match &mut writer {
+            Ok(writer) => {
+                cookie_store::serde::json::save(&store, writer).unwrap();
+                Ok(())
+            }
+            Err(e) => Err(format!("Error writing cookies: {}", e)),
         }
     }
 
@@ -133,16 +125,5 @@ impl User {
             .timeout(Duration::from_secs(10))
             .build()
             .unwrap()
-    }
-}
-
-pub async fn get_user(username: Option<String>, password: Option<String>) -> Result<User, String> {
-    if let (Some(username), Some(password)) = (&username, &password) {
-        match User::new(username, password).await {
-            Ok(user) => Ok(user),
-            Err(error) => Err(format!("User Error {error}")),
-        }
-    } else {
-        Err("Username or Password not provided in config file".to_string())
     }
 }

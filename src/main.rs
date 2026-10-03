@@ -8,6 +8,8 @@ mod db;
 mod domain;
 mod routes;
 
+use std::env;
+
 use rocket::{
     error,
     fairing::{self, Fairing, Info, Kind},
@@ -75,7 +77,19 @@ async fn run_migrations(rocket: Rocket<Build>) -> rocket::fairing::Result {
 
 #[launch]
 async fn rocket() -> _ {
-    let config = match config::read_config().await {
+    let args: Vec<String> = env::args().collect();
+    let mut args_iter = args.into_iter();
+    let mut config_path: Option<String> = None;
+
+    while let Some(arg) = args_iter.next() {
+        match arg.as_str() {
+            "--config" => config_path = args_iter.next(),
+            "--password_file" => (),
+            _ => (),
+        }
+    }
+
+    let config = match config::read_config(config_path).await {
         Ok(config) => config,
         Err(error) => {
             eprintln!("Config Error: {error}");
@@ -83,12 +97,7 @@ async fn rocket() -> _ {
         }
     };
     let port = config.port;
-    let user = match domain::user::get_user(
-        config.ao3_username.clone(),
-        config.ao3_password.clone(),
-    )
-    .await
-    {
+    let user = match domain::user::User::new(&config).await {
         Ok(user) => user,
         Err(error) => {
             eprintln!("User Error: {error}");
@@ -103,7 +112,7 @@ async fn rocket() -> _ {
                 .merge(("address", "0.0.0.0"))
                 .merge((
                     "databases.sqlite.url",
-                    format!("sqlite://{}", config.db_path),
+                    format!("sqlite://{}", config.state_dir.clone() + "/db.sqlite"),
                 )),
         )
         .manage(user)

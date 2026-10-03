@@ -88,7 +88,7 @@ impl Series {
         fandom: &str,
         config: &Config,
     ) -> Result<(Vec<Work>, u32)> {
-        let series_path = Path::new(&config.download_path).join(title);
+        let series_path = Path::new(&config.download_dir).join(title);
         let works = read_dir(series_path.clone())?;
         let mut num_works = 0;
 

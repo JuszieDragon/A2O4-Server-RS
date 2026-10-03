@@ -35,7 +35,7 @@ impl Client for Crosspoint {
         download_format: DownloadFormat,
     ) -> Result<()> {
         let remote_series_folder =
-            self.generate_remote_path(None, Some(series), None, &device.download_folder);
+            self.generate_remote_path(None, Some(series), None, &device.upload_dir);
 
         create_missing_folders_on_remote(device.ip.clone(), &remote_series_folder).await?;
 
@@ -68,10 +68,10 @@ async fn upload_work_bulk(
     is_bulk: bool,
 ) -> Result<()> {
     let filename = work.get_filename(download_format, series.map(|x| x.id));
-    let (file, size) = parent.get_file_with_size(work, series, &filename, &config.download_path)?;
+    let (file, size) = parent.get_file_with_size(work, series, &filename, &config.download_dir)?;
 
     let remote_file_path =
-        parent.generate_remote_path(Some(work), series, None, &device.download_folder);
+        parent.generate_remote_path(Some(work), series, None, &device.upload_dir);
 
     if !is_bulk {
         create_missing_folders_on_remote(device.ip.clone(), &remote_file_path).await?;
