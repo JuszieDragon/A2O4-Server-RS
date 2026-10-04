@@ -8,5 +8,8 @@ target/
 examples.txt
 *.html
 .direnv
+.env
 .envrc
+cookies.json
 db.sqlite
+result

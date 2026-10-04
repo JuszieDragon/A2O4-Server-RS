@@ -209,7 +209,7 @@
               wantedBy = [ "multi-user.target" ];
 
               serviceConfig = {
-                ExecStart = "${package}/bin/a2o4-server --config ${configFile} --ao3_login_file ${config.services.a2o4-server.ao3_login_file}";
+                ExecStart = "${package}/bin/a2o4-server --config ${configFile} --ao3_login_file ${cfg.ao3_login_file}";
                 #Restart = "always";
 
                 StateDirectory = "a2o4-server";
