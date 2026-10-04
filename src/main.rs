@@ -80,11 +80,12 @@ async fn rocket() -> _ {
     let args: Vec<String> = env::args().collect();
     let mut args_iter = args.into_iter();
     let mut config_path: Option<String> = None;
+    let mut ao3_login_path: Option<String> = None;
 
     while let Some(arg) = args_iter.next() {
         match arg.as_str() {
             "--config" => config_path = args_iter.next(),
-            "--password_file" => (),
+            "--ao3_login_file" => ao3_login_path = args_iter.next(),
             _ => (),
         }
     }
@@ -97,7 +98,12 @@ async fn rocket() -> _ {
         }
     };
     let port = config.port;
-    let user = match domain::user::User::new(&config).await {
+    let user = match domain::user::User::new(
+        &config,
+        ao3_login_path.expect("A env file path must be provided"),
+    )
+    .await
+    {
         Ok(user) => user,
         Err(error) => {
             eprintln!("User Error: {error}");

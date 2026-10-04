@@ -68,16 +68,6 @@
           options.services.a2o4-server = {
             enable = mkEnableOption "Enable A2O4-Server";
 
-            ao3_username = mkOption {
-              type = types.str;
-              description = "Username to log into AO3 with";
-            };
-
-            ao3_password = mkOption {
-              type = types.str;
-              description = "Password to log into AO3 with";
-            };
-
             port = mkOption {
               type = lib.types.port;
               default = 9797;
@@ -95,6 +85,16 @@
               type = types.path;
               default = /var/lib/a2o4-server;
               description = "The directory to store service state, like the database file and cookies to preserve sessions";
+            };
+
+            ao3_login_file = mkOption {
+              type = types.path;
+              description = ''
+                path to an env file containing ao3 login details.
+                Example:
+                  AO3_USERNAME=bob
+                  AO3_PASSWORD=pass
+              '';
             };
 
             default_format = mkOption {
@@ -209,7 +209,7 @@
               wantedBy = [ "multi-user.target" ];
 
               serviceConfig = {
-                ExecStart = "${package}/bin/a2o4-server --config ${configFile}";
+                ExecStart = "${package}/bin/a2o4-server --config ${configFile} --ao3_login_file ${config.services.a2o4-server.ao3_login_file}";
                 #Restart = "always";
 
                 StateDirectory = "a2o4-server";

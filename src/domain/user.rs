@@ -1,7 +1,7 @@
 use regex::Regex;
 use reqwest::{header, Client};
 use reqwest_cookie_store::CookieStoreMutex;
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{env, path::PathBuf, sync::Arc, time::Duration};
 
 use crate::config::Config;
 
@@ -11,7 +11,7 @@ pub struct User {
 }
 
 impl User {
-    pub async fn new(config: &Config) -> Result<Self, String> {
+    pub async fn new(config: &Config, login_path: String) -> Result<Self, String> {
         let cookie_store = match Self::load_cookies(config.get_cookies_path()) {
             Ok(store) => store,
             Err(e) => return Err(e),
@@ -26,12 +26,11 @@ impl User {
             });
         }
 
-        let client = Self::auth_user(
-            config.ao3_username.to_string(),
-            config.ao3_password.to_string(),
-            cookie_store.clone(),
-        )
-        .await;
+        dotenvy::from_path(PathBuf::from(login_path)).expect("Failed to load env file");
+        let username = env::var("AO3_USERNAME").expect("Username missing from env file");
+        let password = env::var("AO3_PASSWORD").expect("Password missing from env file");
+
+        let client = Self::auth_user(username, password, cookie_store.clone()).await;
 
         let user = Self {
             client,

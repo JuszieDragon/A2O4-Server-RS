@@ -3,7 +3,6 @@ use crate::{
     common::DownloadFormat,
 };
 use derive_builder::Builder;
-use directories::ProjectDirs;
 use serde::{Deserialize, Deserializer};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -18,8 +17,6 @@ pub struct Config {
     pub port: u16,
     pub download_dir: String,
     pub state_dir: String,
-    pub ao3_username: String,
-    pub ao3_password: String,
     pub default_format: DownloadFormat,
     pub devices: Vec<Device>,
     pub fandom_map: HashMap<String, String>,
@@ -90,16 +87,7 @@ where
 }
 
 pub async fn read_config(path: Option<String>) -> Result<Config, String> {
-    let config_path = match path {
-        Some(path) => path,
-        None => ProjectDirs::from("", "", env!("CARGO_PKG_NAME"))
-            .unwrap()
-            .config_dir()
-            .join("config.toml")
-            .to_str()
-            .unwrap()
-            .to_string(),
-    };
+    let config_path = path.unwrap_or("/var/lib/a2o4-server/config.toml".to_owned());
 
     let Ok(mut file) = File::open(&config_path) else {
         return Err(format!(
