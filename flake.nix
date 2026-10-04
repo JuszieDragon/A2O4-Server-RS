@@ -161,7 +161,7 @@
             fandom_filters = mkOption {
               type = with types;
                 listOf (attrsOf (listOf str));
-              default = {};
+              default = [];
               description = ''
                 A set of key pairs for fandom filtering. If the work/series has the fandom tag on the left value (name) the fandoms in right value (value) will be removed.
                 The order of the filters matters, all filters are run for each work/series from top to bottom.
